@@ -1,0 +1,66 @@
+# Material Library for In Vivo Breast Tissue Targeting
+
+newmtl Breast_Carcinoma_Cells
+  illum 2
+  Kd 0.38 0.18 0.32
+  d 1.0
+  Ns 40
+
+newmtl HER2_Receptor_Mantle
+  illum 2
+  Kd 0.10 0.90 0.50
+  Ke 0.10 0.70 0.35
+  d 0.9
+  Ns 80
+
+newmtl Tumor_Capillary_Vessel
+  illum 2
+  Kd 0.75 0.22 0.22
+  d 0.85
+  Ns 60
+
+newmtl Red_Blood_Cells
+  illum 2
+  Kd 0.85 0.08 0.08
+  d 1.0
+  Ns 50
+
+newmtl Vessel_Fenestrations_EPR
+  illum 2
+  Kd 1.00 0.45 0.20
+  Ke 0.80 0.35 0.10
+  d 0.95
+  Ns 90
+
+newmtl Extracellular_Matrix_Fibrils
+  illum 2
+  Kd 0.75 0.72 0.65
+  d 0.65
+  Ns 25
+
+newmtl Normal_Breast_Adipocytes
+  illum 2
+  Kd 0.92 0.90 0.78
+  d 0.88
+  Ns 30
+
+newmtl Extravasating_Nanoparticles
+  illum 2
+  Kd 1.00 0.02 0.25
+  Ke 0.90 0.01 0.20
+  d 1.0
+  Ns 100
+
+newmtl Targeted_Nanoparticles_Bound
+  illum 2
+  Kd 1.00 0.02 0.25
+  Ke 0.95 0.02 0.25
+  d 1.0
+  Ns 100
+
+newmtl Tissue_Scale_Bar_50um
+  illum 2
+  Kd 0.95 0.95 0.95
+  d 1.0
+  Ns 100
+

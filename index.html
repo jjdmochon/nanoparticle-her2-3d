@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Model: 400 nm Nanoparticles Targeting HER2+ Breast Cancer (Tissue & Molecular Views)</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --panel-bg: rgba(13, 20, 36, 0.85);
+      --panel-border: rgba(56, 189, 248, 0.25);
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-cy5: #ff0055;
+      --accent-her2: #10b981;
+      --accent-vhh: #f59e0b;
+      --accent-peg: #38bdf8;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      user-select: none;
+    }
+
+    #webgl-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 1;
+    }
+
+    /* Top Header & Mode Switcher */
+    header {
+      position: absolute;
+      top: 14px; left: 20px; right: 20px;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .header-badge {
+      pointer-events: auto;
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 10px 18px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-pill {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .pill-her2 { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .pill-cy5 { background: rgba(255, 0, 85, 0.2); color: #ff3377; border: 1px solid rgba(255, 0, 85, 0.4); }
+
+    .subtitle {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    /* Dual Scale Switcher */
+    .view-mode-switcher {
+      pointer-events: auto;
+      display: flex;
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .mode-tab {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mode-tab:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+    .mode-tab.active {
+      background: rgba(56, 189, 248, 0.22);
+      border: 1px solid #38bdf8;
+      color: #38bdf8;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+    }
+
+    /* Floating UI Panels */
+    .controls-panel {
+      position: absolute;
+      top: 86px; left: 20px;
+      width: 320px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      z-index: 10;
+      max-height: calc(100vh - 110px);
+      overflow-y: auto;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .section-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.76rem;
+      font-weight: 500;
+      padding: 7px 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .btn:hover {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #fff;
+    }
+
+    .btn.active {
+      background: rgba(56, 189, 248, 0.25);
+      border-color: #38bdf8;
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    /* Checkbox list */
+    .layer-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      margin-bottom: 3px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.02);
+      font-size: 0.78rem;
+    }
+
+    .layer-label { display: flex; align-items: center; gap: 8px; }
+    .layer-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 30px;
+      height: 16px;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider-toggle {
+      position: absolute; cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.2);
+      transition: .2s; border-radius: 16px;
+    }
+    .slider-toggle:before {
+      position: absolute; content: "";
+      height: 10px; width: 10px;
+      left: 3px; bottom: 3px;
+      background-color: white;
+      transition: .2s; border-radius: 50%;
+    }
+    input:checked + .slider-toggle { background-color: #38bdf8; }
+    input:checked + .slider-toggle:before { transform: translateX(14px); }
+
+    /* Cutaway slider */
+    .slider-container {
+      margin: 8px 0 12px 0;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .slider-container label {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .range-input {
+      width: 100%; height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.15);
+      outline: none; -webkit-appearance: none;
+    }
+    .range-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+    }
+
+    /* Right Info Inspector Panel */
+    .inspector-panel {
+      position: absolute;
+      top: 86px; right: 20px;
+      width: 330px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      z-index: 10;
+      max-height: calc(100vh - 110px);
+      overflow-y: auto;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .spec-card {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 9px 11px;
+      margin-bottom: 8px;
+    }
+
+    .spec-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .spec-value {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #fff;
+      margin-top: 2px;
+    }
+
+    .spec-detail {
+      font-size: 0.74rem;
+      color: #cbd5e1;
+      line-height: 1.35;
+      margin-top: 3px;
+    }
+
+    /* Bottom HUD Bar */
+    .hud-bar {
+      position: absolute;
+      bottom: 16px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      border-radius: 30px;
+      padding: 7px 22px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+      font-size: 0.78rem;
+    }
+
+    .scale-indicator { display: flex; align-items: center; gap: 8px; }
+    .scale-line { width: 70px; height: 3px; background: #38bdf8; position: relative; }
+    .scale-line::before, .scale-line::after {
+      content: ""; position: absolute; top: -4px; width: 2px; height: 11px; background: #38bdf8;
+    }
+    .scale-line::before { left: 0; }
+    .scale-line::after { right: 0; }
+  </style>
+  <script src="three.min.js"></script>
+  <script src="OrbitControls.js"></script>
+</head>
+<body>
+
+  <!-- Top Header Bar -->
+  <header>
+    <div class="header-badge">
+      <h1 id="main-title">
+        400 nm Nanoparticles in HER2+ Breast Cancer Tissue
+        <span class="badge-pill pill-her2">Anti-HER2 VHH</span>
+        <span class="badge-pill pill-cy5">Cy5 NIR</span>
+      </h1>
+      <div class="subtitle" id="main-subtitle">
+        In Vivo Microenvironment: Tumor Capillary Extravasation, Interstitial Diffusion, & Carcinoma Targeting
+      </div>
+    </div>
+
+    <!-- Scale / View Mode Switcher -->
+    <div class="view-mode-switcher">
+      <button class="mode-tab active" id="tab-tissue">
+        <span>🔬 In Vivo Tissue View</span>
+      </button>
+      <button class="mode-tab" id="tab-molecular">
+        <span>⚛️ Nanoscale Synapse View</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Control Panel -->
+  <div class="controls-panel">
+    <div class="section-title">Camera Presets</div>
+    <div class="button-grid" id="camera-buttons">
+      <!-- Populated dynamically per mode -->
+    </div>
+
+    <div id="cutaway-section" style="display: none;">
+      <div class="section-title">Nanoparticle Cutaway</div>
+      <div class="slider-container">
+        <label>
+          <span>Expose Cy5 Core</span>
+          <span id="cutaway-val">90° Cut</span>
+        </label>
+        <input type="range" id="cutaway-slider" class="range-input" min="0" max="100" value="100">
+      </div>
+    </div>
+
+    <div class="section-title">Layer Visibility</div>
+    <div id="layers-container">
+      <!-- Populated dynamically per mode -->
+    </div>
+
+    <div class="section-title" style="margin-top: 12px;">Optical & Animation</div>
+    <div class="button-grid">
+      <button class="btn active" id="btn-pulse">Cy5 Pulse: ON</button>
+      <button class="btn active" id="btn-rotate">Auto-Orbit: ON</button>
+    </div>
+  </div>
+
+  <!-- Right Inspector Panel -->
+  <div class="inspector-panel" id="inspector-panel">
+    <!-- Populated dynamically per mode -->
+  </div>
+
+  <!-- Bottom HUD Bar -->
+  <div class="hud-bar">
+    <div class="scale-indicator">
+      <div class="scale-line"></div>
+      <span id="hud-scale-text"><strong>50 µm</strong> Tissue Scale</span>
+    </div>
+    <span style="color: var(--panel-border);">|</span>
+    <span>Drag: <strong>Rotate</strong></span>
+    <span>Right-Click: <strong>Pan</strong></span>
+    <span>Scroll: <strong>Zoom</strong></span>
+  </div>
+
+  <canvas id="webgl-canvas"></canvas>
+
+  <script>
+    // ============================================================
+    // THREE.JS RENDERER & SCENE SETUP
+    // ============================================================
+    const canvas = document.getElementById('webgl-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x080c16);
+    scene.fog = new THREE.FogExp2(0x080c16, 0.002);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 4000);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
+    keyLight.position.set(250, 450, 350);
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0x38bdf8, 0.7);
+    fillLight.position.set(-300, 200, -250);
+    scene.add(fillLight);
+
+    const cy5PointLight = new THREE.PointLight(0xff0055, 3.5, 300, 1.5);
+    scene.add(cy5PointLight);
+
+    // Master Scene Roots
+    const rootMolecular = new THREE.Group();
+    const rootTissue = new THREE.Group();
+    scene.add(rootMolecular);
+    scene.add(rootTissue);
+
+    // ============================================================
+    // BUILD SCENE 1: IN VIVO BREAST TISSUE TARGETING MICROENVIRONMENT
+    // ============================================================
+    // Coordinate scale: 1 unit = 1 µm
+    // Features: Tumor capillary, RBCs, fenestrations, ECM fibrils, HER2+ carcinoma nest, bound NPs, adipocytes
+
+    const groupTissueVessel = new THREE.Group();
+    const groupTissueRBC = new THREE.Group();
+    const groupTissueECM = new THREE.Group();
+    const groupTissueCancer = new THREE.Group();
+    const groupTissueHER2 = new THREE.Group();
+    const groupTissueExtravasating = new THREE.Group();
+    const groupTissueBoundNPs = new THREE.Group();
+    const groupTissueAdipocytes = new THREE.Group();
+
+    rootTissue.add(groupTissueVessel);
+    rootTissue.add(groupTissueRBC);
+    rootTissue.add(groupTissueECM);
+    rootTissue.add(groupTissueCancer);
+    rootTissue.add(groupTissueHER2);
+    rootTissue.add(groupTissueExtravasating);
+    rootTissue.add(groupTissueBoundNPs);
+    rootTissue.add(groupTissueAdipocytes);
+
+    // 1. Tumor Capillary Vessel (Curved cylinder along X = -38 µm)
+    const vesselMat = new THREE.MeshStandardMaterial({
+      color: 0x991b1b,
+      roughness: 0.35,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.80,
+      side: THREE.DoubleSide
+    });
+
+    const vesselCurvePoints = [];
+    for (let z = -55; z <= 55; z += 10) {
+      vesselCurvePoints.push(new THREE.Vector3(-38 + 3 * Math.sin(0.06 * z), 4 * Math.cos(0.05 * z), z));
+    }
+    const vesselCurve = new THREE.CatmullRomCurve3(vesselCurvePoints);
+    const vesselGeo = new THREE.TubeGeometry(vesselCurve, 32, 9.5, 16, false);
+    const vesselMesh = new THREE.Mesh(vesselGeo, vesselMat);
+    groupTissueVessel.add(vesselMesh);
+
+    // Fenestrations (Leaky endothelial gaps)
+    const fenMat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
+    const fenSites = [
+      new THREE.Vector3(-30, 2, -20),
+      new THREE.Vector3(-29, -1, -5),
+      new THREE.Vector3(-31, 4, 15),
+      new THREE.Vector3(-28, -3, 32)
+    ];
+    fenSites.forEach(pos => {
+      const fen = new THREE.Mesh(new THREE.SphereGeometry(1.6, 8, 8), fenMat);
+      fen.position.copy(pos);
+      groupTissueVessel.add(fen);
+    });
+
+    // Red Blood Cells flowing inside vessel
+    const rbcMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.3 });
+    const rbcGeo = new THREE.CylinderGeometry(2.2, 2.2, 0.7, 12);
+    const rbcs = [];
+    for (let i = 0; i < 30; i++) {
+      const t = Math.random();
+      const p = vesselCurve.getPoint(t);
+      const tangent = vesselCurve.getTangent(t);
+      const rbc = new THREE.Mesh(rbcGeo, rbcMat);
+      rbc.position.set(
+        p.x + (Math.random() - 0.5) * 8,
+        p.y + (Math.random() - 0.5) * 8,
+        p.z + (Math.random() - 0.5) * 6
+      );
+      rbc.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tangent);
+      groupTissueRBC.add(rbc);
+      rbcs.push({ mesh: rbc, t: t, speed: 0.08 + Math.random() * 0.06 });
+    }
+
+    // 2. Extracellular Matrix (ECM) Collagen Fibrils
+    const ecmMat = new THREE.MeshStandardMaterial({ color: 0xd6d3d1, roughness: 0.6, transparent: true, opacity: 0.65 });
+    for (let i = 0; i < 45; i++) {
+      const pStart = new THREE.Vector3(-30 + Math.random() * 12, (Math.random() - 0.5) * 36, (Math.random() - 0.5) * 80);
+      const pEnd = new THREE.Vector3(5 + Math.random() * 30, (Math.random() - 0.5) * 36, (Math.random() - 0.5) * 80);
+      const pMid = new THREE.Vector3().lerpVectors(pStart, pEnd, 0.5).add(new THREE.Vector3(
+        (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6
+      ));
+      const fibrilCurve = new THREE.CatmullRomCurve3([pStart, pMid, pEnd]);
+      const fibrilGeo = new THREE.TubeGeometry(fibrilCurve, 8, 0.35, 4, false);
+      const fibril = new THREE.Mesh(fibrilGeo, ecmMat);
+      groupTissueECM.add(fibril);
+    }
+
+    // 3. HER2-Overexpressing Breast Carcinoma Nest (Pleomorphic malignant cells)
+    const cancerMat = new THREE.MeshStandardMaterial({
+      color: 0x4a1d34,
+      roughness: 0.45,
+      metalness: 0.05
+    });
+
+    const her2PunctaMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+
+    const cancerCellLocations = [
+      { x: 15, y: 0, z: 0, r: 11 },
+      { x: 26, y: 4, z: -6, r: 10 },
+      { x: 8, y: -5, z: 8, r: 9.5 },
+      { x: 22, y: -8, z: 10, r: 10.5 },
+      { x: 4, y: 6, z: -8, r: 9 },
+      { x: 18, y: 12, z: 4, r: 10 },
+      { x: 30, y: -2, z: 6, r: 9.5 },
+      { x: 12, y: -12, z: -4, r: 9 },
+      { x: 2, y: -2, z: -14, r: 8.5 },
+      { x: 24, y: 8, z: -16, r: 9 },
+      { x: 35, y: 5, z: -2, r: 8.5 },
+      { x: 10, y: 14, z: -10, r: 8.5 },
+      { x: 28, y: -14, z: -2, r: 8 }
+    ];
+
+    cancerCellLocations.forEach(c => {
+      // Cell body with irregular ruffled membrane
+      const cellGeo = new THREE.SphereGeometry(c.r, 16, 12);
+      // Displace vertices slightly for malignant pleomorphism
+      const pos = cellGeo.attributes.position;
+      for (let j = 0; j < pos.count; j++) {
+        const vx = pos.getX(j);
+        const vy = pos.getY(j);
+        const vz = pos.getZ(j);
+        const disp = 1.0 + 0.08 * Math.sin(vx * 0.8) * Math.cos(vy * 0.8);
+        pos.setXYZ(j, vx * disp, vy * disp, vz * disp);
+      }
+      cellGeo.computeVertexNormals();
+
+      const cellMesh = new THREE.Mesh(cellGeo, cancerMat);
+      cellMesh.position.set(c.x, c.y, c.z);
+      groupTissueCancer.add(cellMesh);
+
+      // Overexpressed HER2 puncta on tumor cell surface
+      for (let k = 0; k < 22; k++) {
+        const u = Math.random();
+        const costheta = 2 * Math.random() - 1;
+        const sintheta = Math.sqrt(Math.max(0, 1 - costheta * costheta));
+        const phi = 2 * Math.PI * Math.random();
+
+        const px = c.x + (c.r + 0.3) * sintheta * Math.cos(phi);
+        const py = c.y + (c.r + 0.3) * costheta;
+        const pz = c.z + (c.r + 0.3) * sintheta * Math.sin(phi);
+
+        const puncta = new THREE.Mesh(new THREE.SphereGeometry(0.35, 6, 6), her2PunctaMat);
+        puncta.position.set(px, py, pz);
+        groupTissueHER2.add(puncta);
+      }
+    });
+
+    // 4. Targeted 400 nm Nanoparticles (Cy5 Glowing Core + VHH Corona)
+    const npCy5Mat = new THREE.MeshStandardMaterial({
+      color: 0xff0055,
+      emissive: 0xff0044,
+      emissiveIntensity: 2.2,
+      roughness: 0.15
+    });
+
+    const npVhhCoronaMat = new THREE.MeshStandardMaterial({
+      color: 0xf59e0b,
+      transparent: true,
+      opacity: 0.85,
+      roughness: 0.3
+    });
+
+    const npCoreGeo = new THREE.SphereGeometry(0.8, 8, 8);
+    const npCoronaGeo = new THREE.SphereGeometry(1.05, 8, 8);
+
+    function createNanoparticle(x, y, z) {
+      const g = new THREE.Group();
+      g.position.set(x, y, z);
+      const core = new THREE.Mesh(npCoreGeo, npCy5Mat);
+      const corona = new THREE.Mesh(npCoronaGeo, npVhhCoronaMat);
+      g.add(core);
+      g.add(corona);
+      return g;
+    }
+
+    // A. Extravasating Nanoparticles diffusing through interstitial space
+    for (let i = 0; i < 28; i++) {
+      const np = createNanoparticle(
+        -28 + Math.random() * 24,
+        (Math.random() - 0.5) * 28,
+        (Math.random() - 0.5) * 60
+      );
+      groupTissueExtravasating.add(np);
+    }
+
+    // B. Bound Nanoparticles densely clustering on HER2+ cancer cells
+    cancerCellLocations.forEach(c => {
+      const numBound = 7 + Math.floor(Math.random() * 5);
+      for (let i = 0; i < numBound; i++) {
+        const costheta = 2 * Math.random() - 1;
+        const sintheta = Math.sqrt(Math.max(0, 1 - costheta * costheta));
+        const phi = 2 * Math.PI * Math.random();
+
+        const bx = c.x + (c.r + 0.8) * sintheta * Math.cos(phi);
+        const by = c.y + (c.r + 0.8) * costheta;
+        const bz = c.z + (c.r + 0.8) * sintheta * Math.sin(phi);
+
+        const np = createNanoparticle(bx, by, bz);
+        groupTissueBoundNPs.add(np);
+      }
+    });
+
+    // 5. Normal Breast Stroma & Adipocytes (Untouched / zero binding)
+    const adipocyteMat = new THREE.MeshStandardMaterial({
+      color: 0xfef08a,
+      roughness: 0.55,
+      metalness: 0.05,
+      transparent: true,
+      opacity: 0.85
+    });
+
+    const adipocyteLocs = [
+      { x: 46, y: -12, z: -25, r: 12 },
+      { x: 52, y: 2, z: -18, r: 14 },
+      { x: 48, y: 16, z: -10, r: 13 },
+      { x: 54, y: -8, z: 8, r: 14.5 },
+      { x: 48, y: 10, z: 22, r: 13.5 },
+      { x: 56, y: -4, z: 32, r: 12.5 },
+      { x: 42, y: 24, z: 4, r: 11.5 }
+    ];
+
+    adipocyteLocs.forEach(a => {
+      const fat = new THREE.Mesh(new THREE.SphereGeometry(a.r, 14, 12), adipocyteMat);
+      fat.position.set(a.x, a.y, a.z);
+      groupTissueAdipocytes.add(fat);
+    });
+
+    // ============================================================
+    // BUILD SCENE 2: NANOSCALE MOLECULAR SYNAPSE VIEW (400 nm)
+    // ============================================================
+    const NP_RADIUS = 200.0;
+    const NP_CENTER = new THREE.Vector3(0, 215, 0);
+    const MEMBRANE_SIZE = 700.0;
+
+    const groupCoreFull = new THREE.Group();
+    const groupCoreCutaway = new THREE.Group();
+    const groupCy5 = new THREE.Group();
+    const groupPEG = new THREE.Group();
+    const groupVHH = new THREE.Group();
+    const groupMembrane = new THREE.Group();
+    const groupMolHER2 = new THREE.Group();
+    const groupAvidity = new THREE.Group();
+
+    rootMolecular.add(groupCoreFull);
+    rootMolecular.add(groupCoreCutaway);
+    rootMolecular.add(groupCy5);
+    rootMolecular.add(groupPEG);
+    rootMolecular.add(groupVHH);
+    rootMolecular.add(groupMembrane);
+    rootMolecular.add(groupMolHER2);
+    rootMolecular.add(groupAvidity);
+
+    // Polystyrene core
+    const psMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xe0e7ef, roughness: 0.35, metalness: 0.05,
+      transmission: 0.3, opacity: 0.88, transparent: true,
+      side: THREE.DoubleSide
+    });
+    const fullSphereGeo = new THREE.SphereGeometry(NP_RADIUS, 48, 36);
+    const fullSphereMesh = new THREE.Mesh(fullSphereGeo, psMaterial);
+    fullSphereMesh.position.copy(NP_CENTER);
+    groupCoreFull.add(fullSphereMesh);
+    groupCoreFull.visible = false;
+
+    // Cutaway Polystyrene Sphere
+    const cutawayGeo = new THREE.SphereGeometry(NP_RADIUS, 48, 36, Math.PI * 0.5, Math.PI * 1.5);
+    const cutawayMesh = new THREE.Mesh(cutawayGeo, psMaterial);
+    cutawayMesh.position.copy(NP_CENTER);
+    groupCoreCutaway.add(cutawayMesh);
+
+    const sliceMat = new THREE.MeshStandardMaterial({ color: 0xc8d3e0, roughness: 0.5, side: THREE.DoubleSide });
+    const wall1 = new THREE.Mesh(new THREE.CircleGeometry(NP_RADIUS, 36, 0, Math.PI), sliceMat);
+    wall1.rotation.y = Math.PI / 2;
+    wall1.position.copy(NP_CENTER);
+    groupCoreCutaway.add(wall1);
+
+    const wall2 = new THREE.Mesh(new THREE.CircleGeometry(NP_RADIUS, 36, 0, Math.PI), sliceMat);
+    wall2.position.copy(NP_CENTER);
+    groupCoreCutaway.add(wall2);
+
+    // Cy5 core payload
+    const cy5CoreGlowMat = new THREE.MeshBasicMaterial({ color: 0xff0055, transparent: true, opacity: 0.22, side: THREE.BackSide });
+    const cy5GlowMesh = new THREE.Mesh(new THREE.SphereGeometry(140, 24, 18), cy5CoreGlowMat);
+    cy5GlowMesh.position.copy(NP_CENTER);
+    groupCy5.add(cy5GlowMesh);
+
+    const molCy5Mat = new THREE.MeshStandardMaterial({ color: 0xff0055, emissive: 0xff0044, emissiveIntensity: 1.8, roughness: 0.2 });
+    const cy5MolGeo = new THREE.SphereGeometry(2.6, 8, 8);
+    for (let i = 0; i < 300; i++) {
+      const u = Math.random();
+      const r = 180.0 * Math.cbrt(u);
+      const costheta = 2.0 * Math.random() - 1.0;
+      const sintheta = Math.sqrt(Math.max(0, 1.0 - costheta * costheta));
+      const phi = 2.0 * Math.PI * Math.random();
+
+      const fx = NP_CENTER.x + r * sintheta * Math.cos(phi);
+      const fy = NP_CENTER.y + r * costheta;
+      const fz = NP_CENTER.z + r * sintheta * Math.sin(phi);
+
+      const mol = new THREE.Mesh(cy5MolGeo, molCy5Mat);
+      mol.position.set(fx, fy, fz);
+      groupCy5.add(mol);
+    }
+
+    // PEG Linkers & Anti-HER2 VHH
+    const pegMaterial = new THREE.MeshStandardMaterial({ color: 0xbae6fd, roughness: 0.4 });
+    const vhhMaterial = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.35 });
+    const cdrMaterial = new THREE.MeshStandardMaterial({ color: 0xff4500, roughness: 0.3 });
+    const vhhEllipsoidGeo = new THREE.SphereGeometry(1, 10, 8);
+    vhhEllipsoidGeo.scale(1.8, 2.5, 1.8);
+    const cdrGeo = new THREE.SphereGeometry(1.2, 6, 6);
+
+    const numTethers = 120;
+    const goldenRatio = (1.0 + Math.sqrt(5.0)) / 2.0;
+
+    for (let i = 0; i < numTethers; i++) {
+      const lat = Math.asin(-1.0 + (2.0 * i) / numTethers);
+      const lon = (2.0 * Math.PI * i) / goldenRatio;
+      const nx = Math.cos(lat) * Math.cos(lon);
+      const ny = Math.sin(lat);
+      const nz = Math.cos(lat) * Math.sin(lon);
+
+      if (nx > 0.05 && nz > 0.05 && ny > -0.2) continue;
+
+      const pSurf = new THREE.Vector3().copy(NP_CENTER).addScaledVector(new THREE.Vector3(nx, ny, nz), NP_RADIUS);
+      const pegLen = 8.0;
+      const pTip = new THREE.Vector3().copy(NP_CENTER).addScaledVector(new THREE.Vector3(nx, ny, nz), NP_RADIUS + pegLen);
+
+      const pegCurve = new THREE.CatmullRomCurve3([
+        pSurf,
+        new THREE.Vector3(pSurf.x + 3*nx + 1.5*nz, pSurf.y + 3*ny + 1.0, pSurf.z + 3*nz - 1.5*nx),
+        new THREE.Vector3(pSurf.x + 6*nx - 1.5*nz, pSurf.y + 6*ny - 1.0, pSurf.z + 6*nz + 1.5*nx),
+        pTip
+      ]);
+      const pegMesh = new THREE.Mesh(new THREE.TubeGeometry(pegCurve, 6, 0.6, 5, false), pegMaterial);
+      groupPEG.add(pegMesh);
+
+      const vhhCenter = new THREE.Vector3().copy(NP_CENTER).addScaledVector(new THREE.Vector3(nx, ny, nz), NP_RADIUS + pegLen + 2.5);
+      const isSynapse = (ny < -0.84);
+
+      const vhhMesh = new THREE.Mesh(vhhEllipsoidGeo, vhhMaterial);
+      vhhMesh.position.copy(vhhCenter);
+      vhhMesh.lookAt(isSynapse ? new THREE.Vector3(vhhCenter.x, -50, vhhCenter.z) : new THREE.Vector3().copy(vhhCenter).addScaledVector(new THREE.Vector3(nx, ny, nz), 20));
+      groupVHH.add(vhhMesh);
+
+      const cdrMesh = new THREE.Mesh(cdrGeo, cdrMaterial);
+      cdrMesh.position.copy(vhhCenter).add(isSynapse ? new THREE.Vector3(0, -2.6, 0) : new THREE.Vector3(nx*2.6, ny*2.6, nz*2.6));
+      groupVHH.add(cdrMesh);
+    }
+
+    // Cancer Cell Membrane
+    const memGeo = new THREE.PlaneGeometry(MEMBRANE_SIZE, MEMBRANE_SIZE, 40, 40);
+    memGeo.rotateX(-Math.PI / 2);
+    function getMemY(x, z) { return 3.5 * Math.sin(0.015 * x) * Math.cos(0.015 * z) + 2.0 * Math.sin(0.03 * x + 0.5); }
+    const pAttr = memGeo.attributes.position;
+    for (let i = 0; i < pAttr.count; i++) pAttr.setY(i, getMemY(pAttr.getX(i), pAttr.getZ(i)));
+    memGeo.computeVertexNormals();
+
+    const memMesh = new THREE.Mesh(memGeo, new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.55, side: THREE.DoubleSide }));
+    groupMembrane.add(memMesh);
+
+    // Molecular HER2 Receptors
+    const her2MatD4 = new THREE.MeshStandardMaterial({ color: 0x059669 });
+    const her2MatD3 = new THREE.MeshStandardMaterial({ color: 0x10b981 });
+    const her2MatD2 = new THREE.MeshStandardMaterial({ color: 0x34d399 });
+    const her2MatD1 = new THREE.MeshStandardMaterial({ color: 0x6ee7b7 });
+
+    function buildMolHER2(hx, hz, isBound = false) {
+      const hy = getMemY(hx, hz);
+      const rg = new THREE.Group();
+      rg.position.set(hx, hy, hz);
+      const d4 = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 3.2, 6), her2MatD4); d4.position.set(0, 1.6, 0); rg.add(d4);
+      const d3 = new THREE.Mesh(new THREE.SphereGeometry(1.7, 6, 6), her2MatD3); d3.position.set(0.6, 4.8, -0.4); rg.add(d3);
+      const d2 = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 3.2, 6), her2MatD2); d2.position.set(-0.6, 7.8, 0.4); rg.add(d2);
+      const d1 = new THREE.Mesh(new THREE.SphereGeometry(1.8, 6, 6), her2MatD1); d1.position.set(0, 11.2, 0); rg.add(d1);
+
+      if (isBound) {
+        const br = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 2.5, 6), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+        br.position.set(0, 13.0, 0);
+        groupAvidity.add(br);
+        br.position.add(rg.position);
+      }
+      return rg;
+    }
+
+    [{ x: -12, z: -10 }, { x: 14, z: -8 }, { x: -6, z: 16 }, { x: 10, z: 12 }].forEach(l => groupMolHER2.add(buildMolHER2(l.x, l.z, true)));
+    for (let i = 0; i < 40; i++) {
+      const dist = 38.0 + Math.random() * 260.0;
+      const ang = Math.random() * Math.PI * 2;
+      groupMolHER2.add(buildMolHER2(dist * Math.cos(ang), dist * Math.sin(ang), false));
+    }
+
+    // Default start in Tissue Mode
+    rootMolecular.visible = false;
+    rootTissue.visible = true;
+
+    // ============================================================
+    // CAMERA PRESETS & DYNAMIC UI CONFIGURATION PER MODE
+    // ============================================================
+    let currentMode = "tissue"; // "tissue" | "molecular"
+
+    const tissuePresets = {
+      overview: { pos: new THREE.Vector3(0, 95, 125), target: new THREE.Vector3(5, 0, 0) },
+      capillary: { pos: new THREE.Vector3(-35, 22, 10), target: new THREE.Vector3(-32, 2, 0) },
+      tumornest: { pos: new THREE.Vector3(22, 28, 48), target: new THREE.Vector3(18, 0, 0) },
+      margin: { pos: new THREE.Vector3(42, 35, 60), target: new THREE.Vector3(32, 0, 0) }
+    };
+
+    const molecularPresets = {
+      overview: { pos: new THREE.Vector3(0, 320, 680), target: new THREE.Vector3(0, 160, 0) },
+      core: { pos: new THREE.Vector3(260, 290, 260), target: new THREE.Vector3(0, 215, 0) },
+      synapse: { pos: new THREE.Vector3(0, 35, 120), target: new THREE.Vector3(0, 15, 0) },
+      membrane: { pos: new THREE.Vector3(0, 520, 180), target: new THREE.Vector3(0, 0, 0) }
+    };
+
+    let targetCamPos = tissuePresets.overview.pos.clone();
+    let targetLookAt = tissuePresets.overview.target.clone();
+    camera.position.copy(targetCamPos);
+    controls.target.copy(targetLookAt);
+    let isTransitioningCam = false;
+
+    // Dynamic UI Builders
+    function updateUIForMode(mode) {
+      currentMode = mode;
+      const camGrid = document.getElementById('camera-buttons');
+      const layersContainer = document.getElementById('layers-container');
+      const inspectorPanel = document.getElementById('inspector-panel');
+      const cutawaySection = document.getElementById('cutaway-section');
+      const hudScale = document.getElementById('hud-scale-text');
+
+      if (mode === 'tissue') {
+        document.getElementById('main-title').innerHTML = `
+          400 nm Nanoparticles in HER2+ Breast Cancer Tissue
+          <span class="badge-pill pill-her2">Anti-HER2 VHH</span>
+          <span class="badge-pill pill-cy5">Cy5 NIR</span>
+        `;
+        document.getElementById('main-subtitle').textContent = 
+          'In Vivo Microenvironment: Tumor Capillary Extravasation, Interstitial Diffusion, & Carcinoma Targeting';
+
+        cutawaySection.style.display = 'none';
+        hudScale.innerHTML = '<strong>50 µm</strong> Tissue Scale';
+
+        // Camera buttons
+        camGrid.innerHTML = `
+          <button class="btn active" id="btn-t-overview">1. Tissue Overview</button>
+          <button class="btn" id="btn-t-capillary">2. Leaky Capillary</button>
+          <button class="btn" id="btn-t-tumornest">3. Carcinoma Nest</button>
+          <button class="btn" id="btn-t-margin">4. Tumor-Stroma</button>
+        `;
+
+        // Layer toggles
+        layersContainer.innerHTML = `
+          <div class="layer-item"><div class="layer-label"><div class="layer-dot" style="background:#dc2626;"></div><span>Tumor Capillary & RBCs</span></div><label class="switch"><input type="checkbox" id="t-vessel" checked><span class="slider-toggle"></span></label></div>
+          <div class="layer-item"><div class="layer-label"><div class="layer-dot" style="background:#ff0055;"></div><span>Extravasating Nanoparticles</span></div><label class="switch"><input type="checkbox" id="t-extra" checked><span class="slider-toggle"></span></label></div>
+          <div class="layer-item"><div class="layer-label"><div class="layer-dot" style="background:#d6d3d1;"></div><span>Collagen ECM Matrix</span></div><label class="switch"><input type="checkbox" id="t-ecm" checked><span class="slider-toggle"></span></label></div>
+          <div class="layer-item"><div class="layer-label"><div class="layer-dot" style="background:#701a75;"></div><span>HER2+ Breast Cancer Cells</span></div><label class="switch"><input type="checkbox" id="t-cancer" checked><span class="slider-toggle"></span></label></div>
+          <div class="layer-item"><div class="layer-label"><div class="layer-dot" style="background:#10b981;"></div><span>HER2 Receptor Mantle</span></div><label class="switch"><input type="checkbox" id="t-her2" checked><span class="slider-toggle"></span></label></div>
+          <div class="layer-item"><div class="layer-label"><div class="layer-dot" style="background:#ff0055; box-shadow:0 0 8px #ff0055;"></div><span>Bound Nanoparticle Corona</span></div><label class="switch"><input type="checkbox" id="t-bound" checked><span class="slider-toggle"></span></label></div>
+          <div class="layer-item"><div class="layer-label"><div class="layer-dot" style="background:#fef08a;"></div><span>Normal Breast Adipocytes</span></div><label class="switch"><input type="checkbox" id="t-fat" checked><span class="slider-toggle"></span></label></div>
+        `;
+
+        // Inspector specs
+        inspectorPanel.innerHTML = `
+          <div class="section-title">In Vivo Tissue Dossier</div>
+          <div class="spec-card">
+            <div class="spec-title">Histological Microenvironment</div>
+            <div class="spec-value">Invasive Ductal Carcinoma (IDC)</div>
+            <div class="spec-detail">Multicellular tumor nest surrounded by collagenous stroma and breast adipocytes. High interstitial fluid pressure (IFP) requires convective & diffusive particle movement.</div>
+          </div>
+          <div class="spec-card">
+            <div class="spec-title">Vascular Extravasation (EPR Effect)</div>
+            <div class="spec-value">Pore Cutoff ~400–600 nm</div>
+            <div class="spec-detail">Discontinuous tumor endothelium allows 400 nm nanoparticles to selectively extravasate, while continuous capillaries in healthy breast tissue strictly exclude them.</div>
+          </div>
+          <div class="spec-card">
+            <div class="spec-title">Targeting & Cellular Retention</div>
+            <div class="spec-value">HER2 Selectivity Ratio > 75:1</div>
+            <div class="spec-detail">Anti-HER2 VHH anchors particles onto malignant cells (>10⁶ HER2/cell), preventing lymphatic washout. Healthy mammary epithelial and adipose cells express baseline HER2 and remain unbound.</div>
+          </div>
+          <div class="spec-card">
+            <div class="spec-title">NIR Far-Red Tumor Margin Contrast</div>
+            <div class="spec-value">Cy5 (λem 670 nm, TBR > 8.5:1)</div>
+            <div class="spec-detail">Deep optical tissue penetration and minimal autofluorescence delineate the exact infiltrative tumor margin for precision fluorescence-guided surgical resection.</div>
+          </div>
+        `;
+
+        // Attach Tissue Event Listeners
+        document.getElementById('btn-t-overview').addEventListener('click', () => switchCamera(tissuePresets.overview, 'btn-t-overview'));
+        document.getElementById('btn-t-capillary').addEventListener('click', () => switchCamera(tissuePresets.capillary, 'btn-t-capillary'));
+        document.getElementById('btn-t-tumornest').addEventListener('click', () => switchCamera(tissuePresets.tumornest, 'btn-t-tumornest'));
+        document.getElementById('btn-t-margin').addEventListener('click', () => switchCamera(tissuePresets.margin, 'btn-t-margin'));
+
+        document.getElementById('t-vessel').addEventListener('change', e => { groupTissueVessel.visible = e.target.checked; groupTissueRBC.visible = e.target.checked; });
+        document.getElementById('t-extra').addEventListener('change', e => groupTissueExtravasating.visible = e.target.checked);
+        document.getElementById('t-ecm').addEventListener('change', e => groupTissueECM.visible = e.target.checked);
+        document.getElementById('t-cancer').addEventListener('change', e => groupTissueCancer.visible = e.target.checked);
+        document.getElementById('t-her2').addEventListener('change', e => groupTissueHER2.visible = e.target.checked);
+        document.getElementById('t-bound').addEventListener('change', e => groupTissueBoundNPs.visible = e.target.checked);
+        document.getElementById('t-fat').addEventListener('change', e => groupTissueAdipocytes.visible = e.target.checked);
+
+      } else {
+        // Molecular Mode
+        document.getElementById('main-title').innerHTML = `
+          400 nm Polystyrene Nanoparticle Molecular Synapse
+          <span class="badge-pill pill-her2">Anti-HER2 VHH</span>
+          <span class="badge-pill pill-cy5">Cy5 Fluorophore</span>
+        `;
+        document.getElementById('main-subtitle').textContent = 
+          'Nanoscale Resolution: 400 nm Core Matrix, Internal Cy5 Entrapment, & VHH–HER2 Binding Avidity';
+
+        cutawaySection.style.display = 'block';
+        hudScale.innerHTML = '<strong>100 nm</strong> Molecular Scale';
+
+        camGrid.innerHTML = `
+          <button class="btn active" id="btn-m-overview">1. Overview</button>
+          <button class="btn" id="btn-m-core">2. Cy5 Core</button>
+          <button class="btn" id="btn-m-synapse">3. VHH–HER2</button>
+          <button class="btn" id="btn-m-membrane">4. Membrane</button>
+        `;
+
+        layersContainer.innerHTML = `
+          <div class="layer-item"><div class="layer-label"><div class="layer-dot" style="background:#e2e8f0;"></div><span>Polystyrene Core (400 nm)</span></div><label class="switch"><input type="checkbox" id="m-core" checked><span class="slider-toggle"></span></label></div>
+          <div class="layer-item"><div class="layer-label"><div class="layer-dot" style="background:#ff0055; box-shadow:0 0 8px #ff0055;"></div><span>Cy5 Fluorophore Matrix</span></div><label class="switch"><input type="checkbox" id="m-cy5" checked><span class="slider-toggle"></span></label></div>
+          <div class="layer-item"><div class="layer-label"><div class="layer-dot" style="background:#38bdf8;"></div><span>PEG2000 Linker Corona</span></div><label class="switch"><input type="checkbox" id="m-peg" checked><span class="slider-toggle"></span></label></div>
+          <div class="layer-item"><div class="layer-label"><div class="layer-dot" style="background:#f59e0b;"></div><span>Anti-HER2 Nanobodies (VHH)</span></div><label class="switch"><input type="checkbox" id="m-vhh" checked><span class="slider-toggle"></span></label></div>
+          <div class="layer-item"><div class="layer-label"><div class="layer-dot" style="background:#0284c7;"></div><span>Cancer Cell Lipid Bilayer</span></div><label class="switch"><input type="checkbox" id="m-mem" checked><span class="slider-toggle"></span></label></div>
+          <div class="layer-item"><div class="layer-label"><div class="layer-dot" style="background:#10b981;"></div><span>Overexpressed HER2 Receptors</span></div><label class="switch"><input type="checkbox" id="m-her2" checked><span class="slider-toggle"></span></label></div>
+          <div class="layer-item"><div class="layer-label"><div class="layer-dot" style="background:#facc15; box-shadow:0 0 6px #facc15;"></div><span>Active Avidity Bridges</span></div><label class="switch"><input type="checkbox" id="m-avid" checked><span class="slider-toggle"></span></label></div>
+        `;
+
+        inspectorPanel.innerHTML = `
+          <div class="section-title">Molecular & Biophysical Dossier</div>
+          <div class="spec-card">
+            <div class="spec-title">Polystyrene Nanosphere Core</div>
+            <div class="spec-value">400.0 nm Diameter</div>
+            <div class="spec-detail">Crosslinked styrene-divinylbenzene (ρ = 1.05 g/cm³, V = 3.35 × 10⁷ nm³). Entraps hydrophobic Cy5 chromophores without covalent leakage.</div>
+          </div>
+          <div class="spec-card">
+            <div class="spec-title">Fluorescent Payload (Cy5)</div>
+            <div class="spec-value">λex 649 nm / λem 670 nm</div>
+            <div class="spec-detail">Far-red cyanine dye (~3,500 dyes/particle). Extinction coeff ε = 250,000 M⁻¹ cm⁻¹, quantum yield Φf = 0.26 in rigid polymer matrix.</div>
+          </div>
+          <div class="spec-card">
+            <div class="spec-title">Targeting Moiety (Anti-HER2 VHH)</div>
+            <div class="spec-value">Single-Domain Nanobody (~15 kDa)</div>
+            <div class="spec-detail">Camelid variable domain tethered via flexible PEG2000 linkers. 3 hypervariable CDR loops orient outward to dock HER2 ECD.</div>
+          </div>
+          <div class="spec-card">
+            <div class="spec-title">Cell Receptor Target (HER2 / ErbB2)</div>
+            <div class="spec-value">Overexpressed (1–2 × 10⁶ / cell)</div>
+            <div class="spec-detail">Constitutively active receptor tyrosine kinase. Multivalent avidity drops effective Kd,app &lt; 10 pM, triggering receptor endocytosis.</div>
+          </div>
+        `;
+
+        document.getElementById('btn-m-overview').addEventListener('click', () => switchCamera(molecularPresets.overview, 'btn-m-overview'));
+        document.getElementById('btn-m-core').addEventListener('click', () => switchCamera(molecularPresets.core, 'btn-m-core'));
+        document.getElementById('btn-m-synapse').addEventListener('click', () => switchCamera(molecularPresets.synapse, 'btn-m-synapse'));
+        document.getElementById('btn-m-membrane').addEventListener('click', () => switchCamera(molecularPresets.membrane, 'btn-m-membrane'));
+
+        document.getElementById('cutaway-slider').addEventListener('input', e => {
+          const val = parseInt(e.target.value);
+          if (val === 0) {
+            groupCoreFull.visible = true; groupCoreCutaway.visible = false;
+            document.getElementById('cutaway-val').textContent = "Closed Sphere";
+          } else {
+            groupCoreFull.visible = false; groupCoreCutaway.visible = true;
+            document.getElementById('cutaway-val').textContent = `${Math.round(val * 0.9)}° Cutaway`;
+          }
+        });
+
+        document.getElementById('m-core').addEventListener('change', e => {
+          if (document.getElementById('cutaway-slider').value == 0) groupCoreFull.visible = e.target.checked;
+          else groupCoreCutaway.visible = e.target.checked;
+        });
+        document.getElementById('m-cy5').addEventListener('change', e => groupCy5.visible = e.target.checked);
+        document.getElementById('m-peg').addEventListener('change', e => groupPEG.visible = e.target.checked);
+        document.getElementById('m-vhh').addEventListener('change', e => groupVHH.visible = e.target.checked);
+        document.getElementById('m-mem').addEventListener('change', e => groupMembrane.visible = e.target.checked);
+        document.getElementById('m-her2').addEventListener('change', e => groupMolHER2.visible = e.target.checked);
+        document.getElementById('m-avid').addEventListener('change', e => groupAvidity.visible = e.target.checked);
+      }
+    }
+
+    function switchCamera(preset, btnId) {
+      document.querySelectorAll('#camera-buttons .btn').forEach(b => b.classList.remove('active'));
+      const btn = document.getElementById(btnId);
+      if (btn) btn.classList.add('active');
+      targetCamPos.copy(preset.pos);
+      targetLookAt.copy(preset.target);
+      isTransitioningCam = true;
+    }
+
+    // Tab Switcher logic
+    const tabTissue = document.getElementById('tab-tissue');
+    const tabMol = document.getElementById('tab-molecular');
+
+    tabTissue.addEventListener('click', () => {
+      tabTissue.classList.add('active');
+      tabMol.classList.remove('active');
+      rootMolecular.visible = false;
+      rootTissue.visible = true;
+      cy5PointLight.position.set(18, 0, 0);
+      cy5PointLight.distance = 180;
+      updateUIForMode('tissue');
+      switchCamera(tissuePresets.overview, 'btn-t-overview');
+    });
+
+    tabMol.addEventListener('click', () => {
+      tabMol.classList.add('active');
+      tabTissue.classList.remove('active');
+      rootTissue.visible = false;
+      rootMolecular.visible = true;
+      cy5PointLight.position.set(0, 215, 0);
+      cy5PointLight.distance = 350;
+      updateUIForMode('molecular');
+      switchCamera(molecularPresets.overview, 'btn-m-overview');
+    });
+
+    // Optical pulse & rotate toggles
+    let pulseActive = true;
+    let autoRotate = true;
+    const btnPulse = document.getElementById('btn-pulse');
+    btnPulse.addEventListener('click', () => {
+      pulseActive = !pulseActive;
+      btnPulse.textContent = `Cy5 Pulse: ${pulseActive ? 'ON' : 'OFF'}`;
+      btnPulse.classList.toggle('active', pulseActive);
+      if (!pulseActive) {
+        npCy5Mat.emissiveIntensity = 1.0;
+        molCy5Mat.emissiveIntensity = 1.0;
+        cy5PointLight.intensity = 2.0;
+      }
+    });
+
+    const btnRotate = document.getElementById('btn-rotate');
+    btnRotate.addEventListener('click', () => {
+      autoRotate = !autoRotate;
+      btnRotate.textContent = `Auto-Orbit: ${autoRotate ? 'ON' : 'OFF'}`;
+      btnRotate.classList.toggle('active', autoRotate);
+    });
+
+    // Initialize UI for tissue view
+    updateUIForMode('tissue');
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // ============================================================
+    // RENDER LOOP & REAL-TIME ANIMATION
+    // ============================================================
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+
+      // Camera lerp
+      if (isTransitioningCam) {
+        camera.position.lerp(targetCamPos, 0.06);
+        controls.target.lerp(targetLookAt, 0.06);
+        if (camera.position.distanceTo(targetCamPos) < 0.5) isTransitioningCam = false;
+      }
+
+      // In Vivo Capillary Flow (RBC movement)
+      if (rootTissue.visible) {
+        rbcs.forEach(item => {
+          item.t = (item.t + item.speed * 0.003) % 1.0;
+          const p = vesselCurve.getPoint(item.t);
+          const tang = vesselCurve.getTangent(item.t);
+          item.mesh.position.set(p.x, p.y, p.z);
+          item.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tang);
+        });
+      }
+
+      // Cy5 Pulse Animation
+      if (pulseActive) {
+        const pulse = 1.6 + 0.8 * Math.sin(elapsed * 2.8);
+        npCy5Mat.emissiveIntensity = pulse;
+        molCy5Mat.emissiveIntensity = pulse;
+        cy5PointLight.intensity = 2.2 + 1.2 * Math.sin(elapsed * 2.8);
+      }
+
+      // Auto-Orbit
+      if (autoRotate && !isTransitioningCam) {
+        if (rootTissue.visible) rootTissue.rotation.y = elapsed * 0.04;
+        else rootMolecular.rotation.y = elapsed * 0.07;
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+    console.log("Dual-Scale 3D Nanoparticle Breast Cancer Engine Initialized.");
+  </script>
+</body>
+</html>

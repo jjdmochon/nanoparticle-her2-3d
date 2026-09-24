@@ -1,0 +1,82 @@
+# Material Library for 400 nm Nanoparticle - HER2 Complex
+# DestiNA Genomics & Biophysical Modeling Standard
+
+newmtl Polystyrene_Core_Cutaway
+  illum 2
+  Kd 0.85 0.88 0.92
+  d 0.85
+  Ns 60
+  Ka 0.2 0.2 0.2
+
+newmtl Polystyrene_Cutaway_Walls
+  illum 2
+  Kd 0.75 0.80 0.85
+  d 1.0
+  Ns 30
+  Ka 0.2 0.2 0.2
+
+newmtl Cy5_Fluorophore_Matrix
+  illum 2
+  Kd 1.00 0.05 0.28
+  Ke 0.85 0.02 0.22
+  d 1.0
+  Ns 90
+
+newmtl Cy5_Internal_Luminescence
+  illum 2
+  Kd 0.95 0.00 0.25
+  Ke 0.60 0.00 0.15
+  d 0.35
+  Ns 10
+
+newmtl PEG_Linkers
+  illum 2
+  Kd 0.70 0.85 0.95
+  d 0.85
+  Ns 40
+
+newmtl Anti_HER2_Nanobodies
+  illum 2
+  Kd 0.95 0.65 0.12
+  d 1.0
+  Ns 75
+  Ka 0.2 0.15 0.05
+
+newmtl Anti_HER2_CDR_Loops
+  illum 2
+  Kd 1.00 0.35 0.05
+  d 1.0
+  Ns 80
+
+newmtl Cancer_Cell_Membrane
+  illum 2
+  Kd 0.15 0.55 0.75
+  d 0.95
+  Ns 35
+
+newmtl HER2_Bound_Complexes
+  illum 2
+  Kd 0.10 0.85 0.45
+  Ke 0.05 0.35 0.15
+  d 1.0
+  Ns 80
+
+newmtl HER2_Overexpressed_Receptors
+  illum 2
+  Kd 0.15 0.75 0.40
+  d 1.0
+  Ns 60
+
+newmtl Avidity_Binding_Vectors
+  illum 2
+  Kd 1.00 0.90 0.20
+  Ke 0.80 0.70 0.10
+  d 0.9
+  Ns 100
+
+newmtl Nanoscale_400nm_Scale_Bar
+  illum 2
+  Kd 0.95 0.95 0.95
+  d 1.0
+  Ns 100
+
